@@ -299,12 +299,6 @@ export default function BuffersHandler(
     const adaptation$ = new ReplaySubject<Adaptation|null>(1);
 
     /**
-     * The Period coming just after the current one.
-     * @type {Period|undefined}
-     */
-    const nextPeriod = manifest.getPeriodAfter(basePeriod);
-
-    /**
      * Will emit when the Buffer for the next Period can be created.
      * @type {Subject}
      */
@@ -332,6 +326,7 @@ export default function BuffersHandler(
      */
     const nextPeriodBuffer$ = createNextBuffers$
       .exhaustMap(() => {
+        const nextPeriod = manifest.getPeriodAfter(basePeriod);
         if (!nextPeriod || nextPeriod === basePeriod) {
           return Observable.empty(); // finished
         }
