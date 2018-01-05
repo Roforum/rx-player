@@ -15,6 +15,7 @@
  */
 
 import arrayFind = require("array-find");
+import arrayIncludes from "../utils/array-includes";
 import assert from "../utils/assert";
 import generateNewId from "../utils/id";
 import { normalize as normalizeLang } from "../utils/languages";

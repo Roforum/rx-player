@@ -30,6 +30,7 @@ interface ITimelineIndex {
   media: string;
   timeline: IIndexSegment[];
   startNumber?: number;
+  timeOffset?: number;
 }
 
 interface ITemplateIndex {
@@ -39,7 +40,7 @@ interface ITemplateIndex {
   duration: number;
   startNumber: number;
   timeline: IIndexSegment[];
-  tokenOffset?: number;
+  timeOffset?: number;
 }
 
 interface IListIndex {
@@ -48,6 +49,7 @@ interface IListIndex {
   timescale : number;
   media : string;
   list : IListIndexListItem[];
+  timeOffset?: number;
 }
 
 export interface IListIndexListItem {

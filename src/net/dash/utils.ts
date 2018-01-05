@@ -52,7 +52,7 @@ function addNextSegments(
  * @param {Number} l
  * @returns {string}
  */
-function pad(n : number|string, l : number) : string {
+function pad(n: number|string, l: number): string {
   const nToString = n.toString();
   if (nToString.length >= l) {
     return nToString;
@@ -67,9 +67,9 @@ function pad(n : number|string, l : number) : string {
  * @returns {Function} - @see replaceTokens
  */
 function processFormatedToken(
-  replacer : string|number
-) : (x: string, y: number, widthStr: string) => string {
-  return (_match, _format, widthStr : string) => {
+  replacer: string|number
+): (x: string, y: number, widthStr: string) => string {
+  return (_match, _format, widthStr: string) => {
     const width = widthStr ? parseInt(widthStr, 10) : 1;
     return pad("" + replacer, width);
   };
@@ -90,16 +90,16 @@ function replaceTokens(
   segment : Segment,
   representation : Representation
 ) : string {
-  const timeOffset = segment.timescale * (representation.index.getTokenOffset() || 0);
+  const timeOffset = segment.timescale * representation.index.getTimeOffset();
   if (path.indexOf("$") === -1) {
     return path;
   } else {
     return path
       .replace(/\$\$/g, "$")
       .replace(/\$RepresentationID\$/g,
-        String(representation.id))
+      String(representation.id))
       .replace(/\$Bandwidth(|\%0(\d+)d)\$/g,
-        processFormatedToken(representation.bitrate))
+      processFormatedToken(representation.bitrate))
       .replace(/\$Number(|\%0(\d+)d)\$/g, (_x, _y, widthStr) => {
         if (segment.number == null) {
           throw new Error("Segment number not defined in a $Number$ scheme");
@@ -123,7 +123,7 @@ function replaceTokens(
  * @param {Representation} representation
  * @returns {Boolean}
  */
-function isMP4EmbeddedTrack(representation : Representation) : boolean {
+function isMP4EmbeddedTrack(representation: Representation): boolean {
   return representation.mimeType === "application/mp4";
 }
 
@@ -132,7 +132,7 @@ function isMP4EmbeddedTrack(representation : Representation) : boolean {
  * @param {Array.<string|Number>}
  * @returns {string}
  */
-function byteRange([start, end] : [number, number]) : string {
+function byteRange([start, end]: [number, number]): string {
   if (!end || end === Infinity) {
     return "bytes=" + (+start) + "-";
   } else {

@@ -195,18 +195,18 @@ export default class LanguageManager {
 
     const preferredAudioTracks = this._preferredAudioTracks;
     const audioAdaptations = periodItem.period.adaptations.audio || [];
-    const chosenAudioAdaptation = this._audioChoiceMemory.get(period);
+    let preferredAudioTrack = this._audioChoiceMemory.get(period);
     if (
-      chosenAudioAdaptation === undefined ||
+      preferredAudioTrack === undefined ||
       !isAudioAdaptationOptimal(
-        chosenAudioAdaptation, audioAdaptations, preferredAudioTracks)
+        preferredAudioTrack, audioAdaptations, preferredAudioTracks)
     ) {
-      const optimalAdaptation = findFirstOptimalAudioAdaptation(
+      preferredAudioTrack = findFirstOptimalAudioAdaptation(
         audioAdaptations, preferredAudioTracks);
 
-      this._audioChoiceMemory.set(period, optimalAdaptation);
-      audioInfos.adaptation$.next(optimalAdaptation);
+      this._audioChoiceMemory.set(period, preferredAudioTrack);
     }
+    audioInfos.adaptation$.next(preferredAudioTrack);
   }
 
   setPreferredTextTrack(period : Period) {

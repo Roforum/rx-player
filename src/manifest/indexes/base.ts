@@ -32,6 +32,7 @@ interface IBaseIndex {
   timescale : number;
   media : string;
   timeline : IIndexSegment[];
+  timeOffset?: number;
 }
 
 /**
@@ -71,17 +72,18 @@ const SegmentBaseHelpers: ISegmentHelpers<ITimelineIndex> = {
       range: [number, number];
     }
   ) : boolean {
-    if (segmentInfos.timescale !== index.timescale) {
-      const { timescale } = index;
+    const { timescale, timeOffset } = index;
+    if (segmentInfos.timescale !== timescale) {
       index.timeline.push({
-        ts: (segmentInfos.time / segmentInfos.timescale) * timescale,
+        ts: ((segmentInfos.time / segmentInfos.timescale) * timescale) +
+          (timeOffset || 0) * timescale,
         d: (segmentInfos.duration / segmentInfos.timescale) * timescale,
         r: segmentInfos.count,
         range: segmentInfos.range,
       });
     } else {
       index.timeline.push({
-        ts: segmentInfos.time,
+        ts: segmentInfos.time + (timeOffset || 0) * timescale,
         d: segmentInfos.duration,
         r: segmentInfos.count,
         range: segmentInfos.range,
