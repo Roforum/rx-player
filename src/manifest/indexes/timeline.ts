@@ -36,6 +36,7 @@ interface ITimelineIndex {
   media : string;
   timeline : IIndexSegment[];
   startNumber? : number;
+  tokenOffset? : number;
 }
 
 /**
@@ -210,7 +211,8 @@ const SegmentTimelineHelpers: ISegmentHelpers<ITimelineIndex> = {
       last = { ts: last.ts, d: 0, r: last.r };
     }
 
-    return !(scaledTo <= getTimelineRangeEnd(last));
+    const diff = (getTimelineRangeEnd(last) - scaledTo);
+    return !(diff + timescale >= 0);
   },
 
   /**

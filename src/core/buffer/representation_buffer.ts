@@ -264,7 +264,6 @@ export default function RepresentationBuffer({
     // get every segments currently downloaded and loaded
     const segments = segmentBookkeeper.inventory
       .map(s => s.infos.segment);
-
     const shouldRefresh = representation.index.shouldRefresh(segments, start, end);
     if (shouldRefresh) {
       const error = new IndexError(
@@ -279,7 +278,6 @@ export default function RepresentationBuffer({
     // wanted buffer size, we can retrieve the list of segments to inject in
     // our pipelines.
     const mediaSegments = representation.index.getSegments(start, duration);
-
     if (initSegment) {
       mediaSegments.unshift(initSegment);
     }

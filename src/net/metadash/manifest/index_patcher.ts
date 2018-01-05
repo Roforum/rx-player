@@ -14,22 +14,29 @@
  * limitations under the License.
  */
 
+import { IPeriod } from "../../../net/dash/manifest/node_parsers";
 import { IParsedAdaptationSet } from "../../dash/manifest/node_parsers/AdaptationSet";
 import { IParsedPeriod } from "../../dash/manifest/node_parsers/Period";
 
 export default function patchSegmentsIndex(period: IParsedPeriod) {
-    period.adaptations.forEach((adaptation: IParsedAdaptationSet) => {
-      const index = adaptation.representations[0].index;
-      if(index.timeline && period.start != null){
-        index.timeline.forEach((tl: any) => {
+    const adapt = JSON.parse(JSON.stringify(period.adaptations));
+    delete period.adaptations;
+    adapt.forEach((adaptation: IParsedAdaptationSet) => {
+      const reps = JSON.parse(JSON.stringify(adaptation.representations));
+      delete adaptation.representations;
+      reps.forEach((rep) => {
+        const index = rep.index;
+        if(index.tokenOffset == null){
           index.tokenOffset = period.start;
-            tl.ts += ((period.start || 0) * index.timescale);
-        });
-      }
-      else if(index.startNumber && period.start){
-        index.tokenOffset = period.start;
-      } else {
-        throw new Error("Start time may be spcified on period.");
-      }
+          if(index.timeline != null && period.start != null){
+            index.timeline.forEach((tl: any) => {
+              tl.ts += ((index.tokenOffset || 0) * index.timescale);
+          });
+          }
+        }
+      });
+      adaptation.representations = reps;
     });
+    period.adaptations = adapt;
+    return period;
 }

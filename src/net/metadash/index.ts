@@ -67,18 +67,15 @@ interface IMetaManifestInfo {
       url: string;
     }>;
     startTime: number;
-    looped: number;
 }
 
 function loadMetaData(data: any): {
   urls: string[];
   startTime: number;
-  looped: number;
 } {
   return {
     urls: data.urls,
     startTime: data.startTime,
-    looped: data.looped,
   };
 }
 
@@ -126,8 +123,7 @@ export default function(
               value: {
                 responseData: {
                   manifests,
-                  startTime: metaData.startTime,
-                  looped: metaData.looped,
+                  startTime: Math.max(metaData.startTime - 10, 0),
                 },
               },
             };
@@ -176,24 +172,22 @@ export default function(
           const responseData = response.responseData instanceof Uint8Array
           ? response.responseData
            : new Uint8Array(response.responseData);
-
           const offset = representation.index.getTokenOffset() || 0;
-          const segmentData = new BoxPatcher(
-            responseData,
-            false,
-            false,
-            offset * segment.timescale
-          ).filter();
-
           let nextSegments : INextSegmentsInfos[]|undefined;
           let segmentInfos : ISegmentTimingInfos;
 
           const indexRange = segment.indexRange;
           const sidxSegments =
-            parseSidx(segmentData, indexRange ? indexRange[0] : 0);
+            parseSidx(responseData, indexRange ? indexRange[0] : 0);
           if (sidxSegments) {
             nextSegments = sidxSegments;
           }
+          const segmentData = new BoxPatcher(
+            responseData,
+            false,
+            false,
+            offset * (init ? (init.timescale || segment.timescale) :  segment.timescale)
+          ).filter();
 
           if (segment.isInit) {
             segmentInfos = { time: -1, duration: 0 };
@@ -220,7 +214,7 @@ export default function(
 
       const imageTrackPipeline = {
         loader(
-          { segment, representation } : ISegmentLoaderArguments
+          { segment, representation, period } : ISegmentLoaderArguments
         ) : ILoaderObservable<ArrayBuffer> {
           const { isInit } = segment;
 
@@ -230,7 +224,7 @@ export default function(
             const { media } = segment;
 
             const path = media ?
-              replaceTokens(media, segment, representation) : "";
+              replaceTokens(media, segment, representation, period) : "";
             const mediaUrl = resolveURL(representation.baseURL, path);
             return request({
               url: mediaUrl,
