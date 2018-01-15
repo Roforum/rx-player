@@ -67,15 +67,25 @@ export function parseFromMetaDocument(
     const totalDuration = durations.reduce((a, b) => a + b, 0);
 
     // 2 - Build manifest live data
-    const plg = (parsedManifests.map(man => man.presentationLiveGap)
+    const presentationLiveGap = (parsedManifests.map(man => man.presentationLiveGap)
       .reduce((acc, val) =>
         Math.min(acc || DEFAULT_LIVE_GAP, val ||DEFAULT_LIVE_GAP), DEFAULT_LIVE_GAP
       )) || DEFAULT_LIVE_GAP;
-    const spd = (parsedManifests.map(man => man.suggestedPresentationDelay)
-      .reduce((acc, val) =>
-        Math.min(acc || 10, val || 10), 10
-      )) || 10;
-    const playbackPosition = (Date.now() / 1000) - (documents.startTime || 0) - plg - spd;
+    const suggestedPresentationDelay =
+      (parsedManifests.map(man => man.suggestedPresentationDelay)
+        .reduce((acc, val) =>
+          Math.min(acc || 10, val || 10), 10
+        )) || 10;
+    const maxSegmentDuration =
+      parsedManifests.map(man => man.maxSegmentDuration)
+        .reduce((acc, val) => Math.min((acc || 0),(val || 0)), 0);
+    const minBufferTime =
+      parsedManifests.map(man => man.minBufferTime)
+        .reduce((acc, val) => Math.min((acc || 0),(val || 0)), 0);
+
+    const playbackPosition = (Date.now() / 1000) - (documents.startTime || 0) -
+      presentationLiveGap -
+      suggestedPresentationDelay;
     const elapsedLoops = Math.floor(playbackPosition / totalDuration);
     const timeOnLoop = playbackPosition % totalDuration;
     let elapsedTimeOnLoop = 0;
@@ -147,20 +157,16 @@ export function parseFromMetaDocument(
 
     const manifest = {
       availabilityStartTime: documents.startTime,
-      presentationLiveGap: plg,
+      presentationLiveGap,
       timeShiftBufferDepth: totalDuration,
       duration: Infinity,
-      id: "gen-meta-man-"+generateNewId(),
-      maxSegmentDuration:
-        parsedManifests.map(man => man.maxSegmentDuration)
-          .reduce((acc, val) => Math.min((acc || 0),(val || 0)), 0),
-      minBufferTime:
-        parsedManifests.map(man => man.minBufferTime)
-          .reduce((acc, val) => Math.min((acc || 0),(val || 0)), 0),
-      profiles: "urn:mpeg:dash:profile:isoff-live:2011",
+      id: "gen-metadash-man-"+generateNewId(),
+      maxSegmentDuration,
+      minBufferTime,
       periods: newPeriods,
-      suggestedPresentationDelay: spd,
-      transportType: "meta-dash",
+      suggestedPresentationDelay,
+      minimumUpdatePeriod: totalDuration,
+      transportType: "metadash",
       type: "dynamic",
       uris: [baseURL || ""],
     };
