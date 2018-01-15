@@ -298,7 +298,7 @@ export default function BuffersHandler(
     basePeriod : Period,
     destroy$ : Observable<void>
   ) : Observable<IMultiplePeriodBuffersEvent> {
-    log.info("creating new Buffer for", bufferType, basePeriod);
+    log.info(`setting new ${bufferType} Buffer for current period`, basePeriod);
 
     /**
      * Emit the chosen adaptation for the current type.

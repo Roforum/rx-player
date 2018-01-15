@@ -26,8 +26,8 @@ import {
 import ICustomTimeRanges from "./time_ranges";
 
 export const BUFFER_TYPES : SupportedBufferTypes[] =
-  ["audio", "video", "text", "image"];
-export type SupportedBufferTypes = "audio"|"video"|"text"|"image";
+  ["audio", "video", "text", "image", "overlay"];
+export type SupportedBufferTypes = "audio"|"video"|"text"|"image"|"overlay";
 
 export type SourceBufferOptions =
   {
@@ -88,6 +88,7 @@ export default class SourceBufferManager {
   private _initializedCustomSourceBuffers : {
     text? : ICreatedSourceBuffer<any>;
     image? : ICreatedSourceBuffer<any>;
+    overlay? : ICreatedSourceBuffer<any>;
   };
 
   /**

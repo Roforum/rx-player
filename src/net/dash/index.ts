@@ -48,6 +48,7 @@ import {
   ISegmentParserArguments,
   ISegmentTimingInfos,
   ITransportPipelines,
+  OverlayParserObservable,
   SegmentParserObservable,
 } from "../types";
 
@@ -66,13 +67,7 @@ interface IDASHOptions {
  */
 export default function(
   options : IDASHOptions = {}
-) : ITransportPipelines<
-  Document,
-  ArrayBuffer|Uint8Array,
-  ArrayBuffer|Uint8Array,
-  ArrayBuffer|string,
-  ArrayBuffer
->{
+) : ITransportPipelines<Document> {
   const segmentLoader = generateSegmentLoader(options.segmentLoader);
   const { contentProtectionParser } = options;
 
@@ -209,11 +204,23 @@ export default function(
     },
   };
 
+  // XXX TODO
+  const overlayTrackPipeline = {
+    loader() : ILoaderObservable<ArrayBuffer> {
+      throw new Error("Overlay tracks not managed yet in DASH");
+    },
+
+    parser() : OverlayParserObservable {
+      throw new Error("Overlay tracks not managed yet in DASH");
+    },
+  };
+
   return {
     manifest: manifestPipeline,
     audio: segmentPipeline,
     video: segmentPipeline,
     text: textTrackPipeline,
     image: imageTrackPipeline,
+    overlay: overlayTrackPipeline,
   };
 }
