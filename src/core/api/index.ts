@@ -213,6 +213,7 @@ class Player extends EventEmitter<any> {
     video? : number;
     text? : number;
     image? : number;
+    overlay? : number;
   };
 
   /**
@@ -225,6 +226,7 @@ class Player extends EventEmitter<any> {
     video : number; // has a default in the config
     text? : number;
     image? : number;
+    overlay? : number;
   };
 
   /**
@@ -237,6 +239,7 @@ class Player extends EventEmitter<any> {
     video : number; // has a default in the config
     text? : number;
     image? : number;
+    overlay? : number;
   };
 
   private _priv_currentPeriod : Period|null;

@@ -31,8 +31,25 @@ export interface ISmoothInitSegmentPrivateInfos {
   };
 }
 
+// privateInfos specific to overlay Segments
+export interface IOverlaySegmentPrivateInfos {
+  type : "overlay";
+  start : number;
+  end : number;
+  version : number;
+  element : {
+    url : string;
+    format : string;
+    xAxis : string;
+    yAxis : string;
+    height : string;
+    width : string;
+  };
+}
+
 // Possible values for Segment's privateInfos
 export type ISegmentPrivateInfos =
+  IOverlaySegmentPrivateInfos |
   ISmoothInitSegmentPrivateInfos;
 
 // ISegment Object.

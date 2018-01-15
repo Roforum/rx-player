@@ -21,7 +21,7 @@ import Representation, {
   IRepresentationArguments
 } from "./representation";
 
-export type AdaptationType = "video"|"audio"|"text"|"image";
+export type AdaptationType = "video"|"audio"|"text"|"image"|"overlay";
 
 // TODO
 export interface IContentProtectionDASH {

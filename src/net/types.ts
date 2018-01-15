@@ -161,43 +161,77 @@ export type ImageParserObservable = Observable<{
   segmentInfos : ISegmentTimingInfos;
 }>;
 
-// Type parameters:
-//   - T : Data returned by the Manifest loader fed into the Manifest
-//         parser
-//   - U : Data returned by the audio segment loader fed into the audio
-//         sergment parser
-//   - V : Data returned by the video segment loader fed into the video
-//         sergment parser
-//   - W : Data returned by the text segment loader fed into the text
-//         sergment parser
-//   - X : Data returned by the image segment loader fed into the image
-//         sergment parser
-export interface ITransportPipelines<T, U, V, W, X> {
-  manifest: {
-    resolver?: (x : IManifestLoaderArguments) => IResolverObservable;
-    loader: (x : IManifestLoaderArguments) => ILoaderObservable<T>;
-    parser: (x : IManifestParserArguments<T>) => IManifestParserObservable;
-  };
-  audio: {
-    loader: (x : ISegmentLoaderArguments) => ILoaderObservable<U>;
-    parser: (x : ISegmentParserArguments<U>) => SegmentParserObservable;
-  };
-  video: {
-    loader: (x : ISegmentLoaderArguments) => ILoaderObservable<V>;
-    parser: (x : ISegmentParserArguments<V>) => SegmentParserObservable;
-  };
-  text: {
-    loader: (x : ISegmentLoaderArguments) => ILoaderObservable<W>;
-    parser: (x : ISegmentParserArguments<W>) => TextTrackParserObservable;
-  };
-  image: {
-    loader: (x : ISegmentLoaderArguments) => ILoaderObservable<X>;
-    parser: (x : ISegmentParserArguments<X>) => ImageParserObservable;
+export interface IMetaDashOverlayData {
+  start : number;
+  end : number;
+  version : number;
+  element : {
+    url : string;
+    format : string;
+    xAxis : string;
+    yAxis : string;
+    height : string;
+    width : string;
   };
 }
 
+export interface IOverlayTrackSegmentData {
+  data : IMetaDashOverlayData[]; // overlay track data, in the given type
+  end : number; // end time time until which the segment apply
+  start : number; // start time from which the segment apply
+  timeOffset : number; // time offset, in seconds, to add to each overlay
+  timescale : number; // timescale to convert the start and end into seconds
+  type : string; // the type of the data
+}
+
+export type OverlayParserObservable = Observable<{
+  segmentData? : IOverlayTrackSegmentData;
+  segmentInfos : ISegmentTimingInfos;
+}>;
+
+// Type parameters:
+//   - T : Data returned by the Manifest loader fed into the Manifest
+//         parser
+export interface ITransportPipelines<T> {
+  manifest: {
+    resolver?: (x : IManifestLoaderArguments) => IResolverObservable;
+    loader: (x : IManifestLoaderArguments) => ILoaderObservable<T>;
+    parser: (x : IManifestParserArguments<T>) =>
+      IManifestParserObservable;
+  };
+  audio: {
+    loader: (x : ISegmentLoaderArguments) =>
+      ILoaderObservable<ArrayBuffer|Uint8Array>;
+    parser: (x : ISegmentParserArguments<ArrayBuffer|Uint8Array>) =>
+      SegmentParserObservable;
+  };
+  video: {
+    loader: (x : ISegmentLoaderArguments) =>
+      ILoaderObservable<ArrayBuffer|Uint8Array>;
+    parser: (x : ISegmentParserArguments<ArrayBuffer|Uint8Array>) =>
+      SegmentParserObservable;
+  };
+  text: {
+    loader: (x : ISegmentLoaderArguments) =>
+      ILoaderObservable<ArrayBuffer|string>;
+    parser: (x : ISegmentParserArguments<ArrayBuffer|string>) =>
+      TextTrackParserObservable;
+  };
+  image: {
+    loader: (x : ISegmentLoaderArguments) => ILoaderObservable<ArrayBuffer>;
+    parser: (x : ISegmentParserArguments<ArrayBuffer>) =>
+      ImageParserObservable;
+  };
+  overlay: {
+    loader: (x : ISegmentLoaderArguments) => ILoaderObservable<ArrayBuffer>;
+    parser: (x : ISegmentParserArguments<ArrayBuffer>) =>
+      OverlayParserObservable;
+  };
+}
+
+// TODO Options definitions + find what to do with that manifest parsing type
 export type ITransportFunction =
-  (options : any) => ITransportPipelines<any, any, any, any, any>;
+  (options : any) => ITransportPipelines<any>;
 
 export type CustomSegmentLoader = (
   // first argument: infos on the segment

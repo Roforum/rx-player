@@ -15,6 +15,7 @@
  */
 
 import arrayFind = require("array-find");
+import objectAssign = require("object-assign");
 import assert from "../utils/assert";
 import generateNewId from "../utils/id";
 import { normalize as normalizeLang } from "../utils/languages";
@@ -36,6 +37,23 @@ type ManifestAdaptations = Partial<Record<AdaptationType, Adaptation[]>>;
 interface ISupplementaryImageTrack {
   mimeType : string;
   url : string;
+}
+
+interface ISupplementaryOverlayTrack {
+  codecs : string;
+  data : {
+    start : number;
+    end : number;
+    version : number;
+    element : {
+      url : string;
+      format : string;
+      xAxis : string;
+      yAxis : string;
+      height : string;
+      width : string;
+    };
+  };
 }
 
 interface ISupplementaryTextTrack {
@@ -191,6 +209,38 @@ export default class Manifest {
     if (newTextAdaptations.length) {
       this.adaptations.text = this.adaptations.text ?
         this.adaptations.text.concat(newTextAdaptations) : newTextAdaptations;
+    }
+  }
+
+  /**
+   * Add supplementary text Adaptation(s) to the manifest.
+   * @param {Object|Array.<Object>} overlayTracks
+   */
+  addSupplementaryOverlayAdaptations(
+    overlayTracks : ISupplementaryOverlayTrack|ISupplementaryOverlayTrack[]
+  ) {
+    const _overlayTracks = Array.isArray(overlayTracks) ? overlayTracks : [overlayTracks];
+    const newOverlayAdaptations = _overlayTracks.map(({ codecs, data }) => {
+      const adaptationID = "gen-overlay-ada-" + generateNewId();
+      const representationID = "gen-overlay-rep-" + generateNewId();
+      return new Adaptation({
+        id: adaptationID,
+        type: "overlay",
+        manuallyAdded: true,
+        representations: [{
+          bitrate: 0,
+          id: representationID,
+          codecs,
+          index: new StaticRepresentationIndex(objectAssign({
+            type: "overlay" as "overlay",
+          }, data)),
+        }],
+      });
+    });
+
+    if (newOverlayAdaptations.length) {
+      this.adaptations.text = this.adaptations.text ?
+        this.adaptations.text.concat(newOverlayAdaptations) : newOverlayAdaptations;
     }
   }
 

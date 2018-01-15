@@ -33,6 +33,7 @@ import {
   ISegmentParserArguments,
   ISegmentTimingInfos,
   ITransportPipelines,
+  OverlayParserObservable,
   SegmentParserObservable,
   TextTrackParserObservable,
 } from "../types";
@@ -80,13 +81,7 @@ function addNextSegments(
 
 export default function(
   options : IHSSParserOptions = {}
-) : ITransportPipelines<
-  Document,               // manifest loader -> parser
-  ArrayBuffer|Uint8Array, // audio    loader -> parser
-  ArrayBuffer|Uint8Array, // video    loader -> parser
-  ArrayBuffer|string,     // text     loader -> parser
-  ArrayBuffer             // image    loader -> parser
-> {
+) : ITransportPipelines<Document> {
   const smoothManifestParser = createSmoothManifestParser(options);
   const segmentLoader = generateSegmentLoader(options.segmentLoader);
 
@@ -378,11 +373,23 @@ export default function(
     },
   };
 
+  // XXX TODO
+  const overlayTrackPipeline = {
+    loader() : ILoaderObservable<ArrayBuffer> {
+      throw new Error("Overlay tracks not managed yet in SMOOTH");
+    },
+
+    parser() : OverlayParserObservable {
+      throw new Error("Overlay tracks not managed yet in SMOOTH");
+    },
+  };
+
   return {
     manifest: manifestPipeline,
     audio: segmentPipeline,
     video: segmentPipeline,
     text: textTrackPipeline,
     image: imageTrackPipeline,
+    overlay: overlayTrackPipeline,
   };
 }
