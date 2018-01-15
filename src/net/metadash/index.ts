@@ -24,6 +24,8 @@ import parseBif from "../../parsers/images/bif";
 
 import BoxPatcher from "./isobmff_patcher";
 
+import assert from "../../utils/assert";
+
 import {
   addNextSegments,
   replaceTokens,
@@ -69,13 +71,18 @@ interface IMetaManifestInfo {
     startTime: number;
 }
 
-function loadMetaData(data: any): {
+function loadMetaDashData(data: string): {
   urls: string[];
   startTime: number;
 } {
+  const parsedMetaDash = JSON.parse(data);
+  const { urls, startTime } = parsedMetaDash;
+  assert(urls);
+  assert(startTime != null);
+
   return {
-    urls: data.urls,
-    startTime: data.startTime,
+    urls,
+    startTime,
   };
 }
 
@@ -98,10 +105,11 @@ export default function(
         // Load meta-manifest as document
         return request({
           url,
+          responseType: "text",
           ignoreProgressEvents: true,
         }).mergeMap(({ value }) => {
           const data = value.responseData;
-          const metaData = loadMetaData(data); // load data from meta document
+          const metaData = loadMetaDashData(data); // load data from meta document
           const manifests$ = metaData.urls.map((adresse) => {
             return request({ // requests documents contents
               url: adresse,

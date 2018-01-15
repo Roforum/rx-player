@@ -63,10 +63,9 @@ const SegmentTemplateHelpers: ISegmentHelpers<ITemplateIndex> = {
     const segments : Segment[] = [];
     for (let baseTime = up; baseTime < to; baseTime += duration) {
       let number;
-      let offsetNumber = 0;
       if(timeOffset){
         const baseNumber = Math.floor((baseTime - (timeOffset * timescale)) / duration);
-        offsetNumber = Math.floor((timeOffset * timescale) / duration);
+        const offsetNumber = Math.floor((timeOffset * timescale) / duration);
         number = baseNumber + offsetNumber +
           (startNumber == null ? 1 : startNumber);
       } else {
@@ -87,7 +86,6 @@ const SegmentTemplateHelpers: ISegmentHelpers<ITemplateIndex> = {
         indexRange: null,
         timescale,
         media,
-        offsetNumber,
       };
       segments.push(new Segment(args));
     }

@@ -29,7 +29,6 @@ export interface ISegmentArguments {
   media? : string;
   number? : number;
   range? : [number, number]|null;
-  offsetNumber?: number;
 }
 
 // TODO Both InitSegment and Segment
@@ -43,7 +42,6 @@ class Segment /* implements ISegment */ {
   public number : number|undefined;
   public timescale : number;
   public media : string;
-  public offsetNumber : number|undefined;
 
   /**
    * @constructor
@@ -76,7 +74,6 @@ class Segment /* implements ISegment */ {
     this.number = args.number;
     this.timescale = args.timescale == null ? 1 : args.timescale;
     this.media = args.media || "";
-    this.offsetNumber = args.offsetNumber;
   }
 }
 
