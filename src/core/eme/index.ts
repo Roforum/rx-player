@@ -34,6 +34,7 @@ import findCompatibleKeySystem, {
  } from "./key_system";
 import { trySettingServerCertificate } from "./server_certificate";
 import manageSessionCreation, {
+  createSessionEvent,
   ErrorStream,
   ISessionEvent,
  } from "./session";
@@ -61,24 +62,12 @@ function createMediaKeysObs(
 }
 
 /**
- * Function triggered when both:
- *   - the ``encrypted`` event has been received.
- *   - a compatible key system configuration has been found.
- *
- * Calls all subsequent EME APIs.
- * @param {MediaEncryptedEvent} encryptedEvent
- * @param {Object} compatibleKeySystem
- * @param {MediaKeySystemAccess} compatibleKeySystem.keySystemAccess
- * @param {Object} compatibleKeySystem.keySystem - config given by the user
- * @returns {Observable}
+ * Store licence if persistent
+ * @param {Object} keySystem
  */
-function handleEncryptedEvents(
-  encryptedEvent : MediaEncryptedEvent,
-  keySystemInfo: IKeySystemPackage,
-  video : HTMLMediaElement,
-  errorStream: ErrorStream
-): Observable<MediaKeys|ISessionEvent|Event> {
-  const { keySystem, keySystemAccess } = keySystemInfo;
+function handleSessionStorage(
+  keySystem: IKeySystemOption
+){
   if (keySystem.persistentLicense) {
     if (keySystem.licenseStorage) {
       $storedSessions.setStorage(keySystem.licenseStorage);
@@ -87,34 +76,111 @@ function handleEncryptedEvents(
       throw new EncryptedMediaError("INVALID_KEY_SYSTEM", error, true);
     }
   }
+}
 
-  log.info("eme: encrypted event", encryptedEvent);
+/**
+ * Triggers server certificate setting
+ * @param {ArrayBuffer} serverCertificate
+ * @param {MediaKeys} mediaKeys
+ * @param {ErrorStream} errorStream
+ */
+function setCertificate$(
+  serverCertificate: ArrayBuffer|ArrayBufferView|undefined,
+  mediaKeys: MediaKeys,
+  errorStream: ErrorStream
+) {
+  return (serverCertificate &&
+    typeof mediaKeys.setServerCertificate === "function" ?
+      trySettingServerCertificate(
+        mediaKeys, serverCertificate, errorStream) :
+    Observable.empty()) as Observable<never>; // Typescript hack
+}
+
+/**
+ * Function triggered when both:
+ *   - the first ``encrypted`` event has been received.
+ *   - a compatible key system configuration has been found.
+ *
+ * Manage first session creation through all subsequent EME APIs.
+ * @param {MediaEncryptedEvent} encryptedEvent
+ * @param {Object} compatibleKeySystem
+ * @param {MediaKeySystemAccess} compatibleKeySystem.keySystemAccess
+ * @param {Object} compatibleKeySystem.keySystem - config given by the user
+ * @returns {Observable}
+ */
+function handleInitEncryptedEvent(
+  encryptedEvent : MediaEncryptedEvent,
+  keySystemInfo: IKeySystemPackage,
+  video : HTMLMediaElement,
+  errorStream: ErrorStream
+): Observable<MediaKeys|ISessionEvent|Event> {
+  log.info("eme: first encrypted event from current content", encryptedEvent);
+  if(encryptedEvent.initData == null){
+    const error = new Error("no init data found on media encrypted event.");
+    throw new EncryptedMediaError("INVALID_ENCRYPTED_EVENT", error, true);
+  }
+
+  const { keySystem, keySystemAccess } = keySystemInfo;
+  const { serverCertificate } = keySystem;
+  handleSessionStorage(keySystem);
+  const initData = new Uint8Array(encryptedEvent.initData);
+
   return createMediaKeysObs(keySystemAccess).mergeMap((mediaKeys) => {
-    // set server certificate if set in API
-    const { serverCertificate } = keySystem;
-    const setCertificate$ = (serverCertificate &&
-      typeof mediaKeys.setServerCertificate === "function" ?
-        trySettingServerCertificate(
-          mediaKeys, serverCertificate, errorStream) :
-      Observable.empty()) as Observable<never>; // Typescript hack
-
     const mksConfig = keySystemAccess.getConfiguration();
-
-    const setMediaKeys$ = setMediaKeysObs(
-      mediaKeys, mksConfig, video, keySystem, instanceInfos);
-    if (encryptedEvent.initData) {
-      const initData = new Uint8Array(encryptedEvent.initData);
-      const manageSessionCreation$ = manageSessionCreation(
-        mediaKeys, mksConfig, keySystem, encryptedEvent.initDataType,
-        initData, errorStream);
-
-      return setCertificate$
-        .concat(Observable.merge(setMediaKeys$, manageSessionCreation$));
-    } else {
-      const error = new Error("no init data found on media encrypted event.");
-      throw new EncryptedMediaError("INVALID_ENCRYPTED_EVENT", error, true);
-    }
+    const setMediaKeys$ =
+      setMediaKeysObs(mediaKeys, mksConfig, video, keySystem, instanceInfos);
+    const manageSessionCreation$ = manageSessionCreation(
+      mediaKeys, mksConfig, keySystem, encryptedEvent.initDataType,
+      initData, errorStream);
+    return setCertificate$(serverCertificate, mediaKeys, errorStream)
+      .concat(Observable.merge(setMediaKeys$, manageSessionCreation$));
   });
+}
+
+/**
+ * Function triggered when both:
+ *   - events from current encrypted content has been received.
+ *   - a compatible key system configuration has been found.
+ *
+ * Manage session creation for current mediaKeys, through all subsequent EME APIs.
+ */
+function handleOngoingPlaybackEncryptedEvents(
+  encryptedEvent$ : Observable<[MediaEncryptedEvent, IKeySystemPackage]>,
+  video : HTMLMediaElement,
+  errorStream: ErrorStream
+): Observable<MediaKeys|ISessionEvent|Event> {
+  return encryptedEvent$
+    .mergeMap(([encryptedEvent , keySystemInfo]) => {
+      log.info("eme: encrypted event", encryptedEvent);
+      if(video.mediaKeys == null){
+        const error = new Error("Video Element should have attached MediaKeys.");
+        throw new EncryptedMediaError("INVALID_ENCRYPTED_EVENT", error, true);
+      }
+      if(encryptedEvent.initData == null){
+        const error = new Error("No init data found on media encrypted event.");
+        throw new EncryptedMediaError("INVALID_ENCRYPTED_EVENT", error, true);
+      }
+
+      const { keySystem, keySystemAccess } = keySystemInfo;
+      const { serverCertificate } = keySystem;
+      handleSessionStorage(keySystem);
+      const initData = new Uint8Array(encryptedEvent.initData);
+      const mksConfig = keySystemAccess.getConfiguration();
+      if(
+        JSON.stringify(mksConfig) !==
+        JSON.stringify(instanceInfos.$mediaKeySystemConfiguration)
+      ){
+        const error = new Error("Can't have sev");
+        throw new EncryptedMediaError("INVALID_ENCRYPTED_EVENT", error, true);
+      }
+
+      const setMediaKeys$ = Observable.of(video.mediaKeys);
+      const manageSessionCreation$ = manageSessionCreation(
+        video.mediaKeys, mksConfig, keySystem, encryptedEvent.initDataType,
+        initData, errorStream);
+      return setCertificate$(serverCertificate, video.mediaKeys, errorStream)
+        .concat(Observable.merge(setMediaKeys$, manageSessionCreation$));
+    });
 }
 
 /**
@@ -140,14 +206,16 @@ function createEME(
     }));
   }
 
-  return Observable.combineLatest(
-    onEncrypted$(video), // wait for "encrypted" event
-    findCompatibleKeySystem(keySystems, instanceInfos)
-  )
-    .take(1)
-    .mergeMap(([evt, ks] : [MediaEncryptedEvent, IKeySystemPackage]) => {
-      return handleEncryptedEvents(evt, ks, video, errorStream);
-    });
+  const encryptedEvents$ =
+  onEncrypted$(video).skip(1)
+    .combineLatest(findCompatibleKeySystem(keySystems, instanceInfos));
+
+  return onEncrypted$(video).take(1)
+      .combineLatest(findCompatibleKeySystem(keySystems, instanceInfos))
+      .mergeMap(([evt, ks] : [MediaEncryptedEvent, IKeySystemPackage]) => {
+        return handleInitEncryptedEvent(evt, ks, video, errorStream)
+          .merge(handleOngoingPlaybackEncryptedEvents(encryptedEvents$, video, errorStream));
+      });
 }
 
 /**
