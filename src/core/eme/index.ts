@@ -34,7 +34,7 @@ import findCompatibleKeySystem, {
  } from "./key_system";
 import { trySettingServerCertificate } from "./server_certificate";
 import manageSessionCreation, {
-  createSessionEvent,
+  compareMksConfigurations,
   ErrorStream,
   ISessionEvent,
  } from "./session";
@@ -167,8 +167,10 @@ function handleOngoingPlaybackEncryptedEvents(
       const initData = new Uint8Array(encryptedEvent.initData);
       const mksConfig = keySystemAccess.getConfiguration();
       if(
-        JSON.stringify(mksConfig) !==
-        JSON.stringify(instanceInfos.$mediaKeySystemConfiguration)
+        !compareMksConfigurations(
+          mksConfig,
+          instanceInfos.$mediaKeySystemConfiguration as MediaKeySystemConfiguration
+        )
       ){
         const error = new Error("Can't have sev");
         throw new EncryptedMediaError("INVALID_ENCRYPTED_EVENT", error, true);
@@ -214,7 +216,9 @@ function createEME(
       .combineLatest(findCompatibleKeySystem(keySystems, instanceInfos))
       .mergeMap(([evt, ks] : [MediaEncryptedEvent, IKeySystemPackage]) => {
         return handleInitEncryptedEvent(evt, ks, video, errorStream)
-          .merge(handleOngoingPlaybackEncryptedEvents(encryptedEvents$, video, errorStream));
+          .merge(
+            handleOngoingPlaybackEncryptedEvents(encryptedEvents$, video, errorStream)
+          );
       });
 }
 
@@ -283,5 +287,5 @@ export {
   getCurrentKeySystem,
   dispose,
   IKeySystemOption,
-  ErrorStream,
+  ErrorStream
 };
