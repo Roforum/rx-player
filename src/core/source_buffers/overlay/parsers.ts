@@ -25,8 +25,7 @@ export interface IHTMLOverlay {
 
 type htmlParserFn = (
   overlay : IMetaDashOverlayData[],
-  timeOffset : number,
-  language? : string
+  timeOffset : number
 ) => IHTMLOverlay[];
 
 const htmlParsers : { [format : string] : htmlParserFn } = {};
@@ -49,8 +48,7 @@ const htmlParsers : { [format : string] : htmlParserFn } = {};
 export default function parseTextTrackToElements(
   type : string,
   data : IMetaDashOverlayData[],
-  timeOffset : number,
-  language? : string
+  timeOffset : number
 ) : IHTMLOverlay[] {
   log.debug("finding parser for overlay of type type:", type);
   const parser = htmlParsers[type];
@@ -59,7 +57,7 @@ export default function parseTextTrackToElements(
     throw new Error("no parser found for the given overlay type");
   }
   log.debug("parser found, parsing...");
-  const parsed = parser(data, timeOffset, language);
+  const parsed = parser(data, timeOffset);
   log.debug("parsed successfully!", parsed);
   return parsed;
 }
