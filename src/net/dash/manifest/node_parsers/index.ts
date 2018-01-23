@@ -69,28 +69,6 @@ export interface IPeriod {
 }
 
 /**
- * @param {Object} index
- * @returns {Number|undefined}
- */
-function calculateIndexLastLiveTimeReference(index: {
-  indexType : string;
-  timeline : Array<{
-    ts : number;
-    d? : number;
-    r : number;
-  }>;
-  timescale : number;
-}) : number|undefined {
-  if (index.indexType === "timeline") {
-    const { ts, r, d } = index.timeline[index.timeline.length - 1];
-
-    // TODO FIXME does that make sense?
-    const securityTime = Math.min(Math.max(d ? d : 0 / index.timescale, 5), 10);
-    return ((ts + (r + 1) * (d ? d : 0)) / index.timescale) - securityTime;
-  }
-}
-
-/**
  * Returns "last time of reference" from the adaptation given, considering a
  * live content.
  * Undefined if a time could not be found.
@@ -125,14 +103,11 @@ const getLastLiveTimeReference = (adaptation: IParsedAdaptationSet): number|unde
   }
 
   const representations = adaptation.representations || [];
-  const representationsWithIndex = representations
-    .filter((r) => r && r.index);
 
-  const lastLiveTimeReferences : Array<number|undefined> = representationsWithIndex
+  const lastLiveTimeReferences : Array<number|undefined> = representations
     .map(representation => {
-      return representation.index ?
-        calculateIndexLastLiveTimeReference(representation.index) :
-        undefined;
+      const lastPosition = representation.index.getLastPosition();
+      return lastPosition != null ? lastPosition - 10 : undefined; // TODO
     });
 
   if (lastLiveTimeReferences.some((x) => x == null)) {
@@ -141,14 +116,10 @@ const getLastLiveTimeReference = (adaptation: IParsedAdaptationSet): number|unde
 
   const representationsMin = Math.min(...lastLiveTimeReferences as number[]);
 
-  // if the last live time reference could not be calculated, return undefined
   if (isNaN(representationsMin)) {
     return undefined;
   }
-
-  if (representations.length === representationsWithIndex.length) {
-    return representationsMin;
-  }
+  return representationsMin;
 };
 
 /**

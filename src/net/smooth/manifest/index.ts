@@ -18,8 +18,6 @@ import config from "../../../config";
 import arrayIncludes from "../../../utils/array-includes";
 import assert from "../../../utils/assert";
 import {
-  // bytesToStr,
-  // toBase64URL,
   bytesToUTF16Str,
   concat,
   guidToUuid,
@@ -44,6 +42,7 @@ import {
   IPeriodSmooth,
   IRepresentationSmooth,
  } from "../types";
+import RepresentationIndex from "./representationIndex";
 
 const DEFAULT_MIME_TYPES: IDictionary<string> = {
   audio: "audio/mp4",
@@ -107,24 +106,6 @@ function parseBoolean(val : string|null) : boolean {
   else {
     return false;
   }
-}
-
-/**
- * @param {Object} adaptation
- * @returns {Number}
- */
-function calcLastRef(
-  index : {
-    timeline : Array<{
-      ts : number;
-      r : number;
-      d? : number;
-    }>;
-    timescale : number;
-  }
-) : number {
-  const { ts, r, d } = index.timeline[index.timeline.length - 1];
-  return ((ts + (r + 1) * (d ? d : 0)) / index.timescale);
 }
 
 /**
@@ -397,7 +378,8 @@ function createSmoothStreamingParser(
   function parseAdaptation(
     root : Element,
     rootURL : string,
-    timescale : number
+    timescale : number,
+    protection? : IContentProtectionSmooth
   ): IAdaptationSmooth|null {
     const _timescale = root.hasAttribute("Timescale") ?
       +(root.getAttribute("Timescale") || 0) : timescale;
@@ -447,7 +429,6 @@ function createSmoothStreamingParser(
       representations: [] as any[],
       index: {
         timeline: [] as IHSSManifestSegment[],
-        indexType: "smooth" as "smooth",
         timescale: _timescale,
         initialization: {},
       },
@@ -468,7 +449,16 @@ function createSmoothStreamingParser(
       representation.id = id + "_" + adaptationType + "-" +
         representation.mimeType + "-" +
         representation.codecs + "-" + representation.bitrate;
-      representation.index = index;
+
+      const initSegmentInfos = {
+        bitsPerSample: representation.bitsPerSample,
+        channels: representation.channels,
+        codecPrivateData: representation.codecPrivateData,
+        packetSize: representation.packetSize,
+        samplingRate: representation.samplingRate,
+        protection,
+      };
+      representation.index = new RepresentationIndex(index, initSegmentInfos);
     });
 
     // TODO(pierre): real ad-insert support
@@ -478,22 +468,18 @@ function createSmoothStreamingParser(
 
     const parsedAdaptation : IAdaptationSmooth = {
       id,
-      index,
       type: adaptationType,
       representations,
       name: name == null ? undefined : name,
-      language: language == null ? undefined : language,
-      normalizedLanguage,
+      language: language == null ?
+        undefined : language,
+      normalizedLanguage: normalizedLanguage == null ?
+        undefined : normalizedLanguage,
     };
 
     if (adaptationType === "text" && subType === "DESC") {
       parsedAdaptation.closedCaption = true;
     }
-
-    // TODO check that one, I did not find it in the spec
-    // else if (adaptationType === "audio" && subType === "DESC") {
-    //   parsedAdaptation.audioDescription = true;
-    // }
 
     return parsedAdaptation;
   }
@@ -514,10 +500,10 @@ function createSmoothStreamingParser(
 
     const {
       protection,
-      adaptations,
+      adaptationNodes,
     } = reduceChildren <{
-      protection: IContentProtectionSmooth|null;
-      adaptations: IAdaptationSmooth[];
+      protection?: IContentProtectionSmooth;
+      adaptationNodes: Element[];
     }> (root, (res, name, node) => {
       switch (name) {
       case "Protection":  {
@@ -525,22 +511,17 @@ function createSmoothStreamingParser(
         break;
       }
       case "StreamIndex":
-        const adaptation : IAdaptationSmooth|null =
-          parseAdaptation(node, rootURL, timescale);
-        if (adaptation) {
-          res.adaptations.push(adaptation);
-        }
+        res.adaptationNodes.push(node);
         break;
       }
       return res;
     }, {
-      protection:  null,
-      adaptations: [],
+      adaptationNodes: [],
     });
 
-    adaptations.forEach((a) => {
-      a.smoothProtection = protection == null ? undefined : protection;
-    });
+    const adaptations : IAdaptationSmooth[] = adaptationNodes.map(node => {
+      return parseAdaptation(node, rootURL, timescale, protection);
+    }).filter((adaptation) : adaptation is IAdaptationSmooth => !!adaptation);
 
     let suggestedPresentationDelay;
     let presentationLiveGap;
@@ -558,11 +539,17 @@ function createSmoothStreamingParser(
       let lastRef;
       {
         const refsToCompare : number[] = [];
-        if (video && video.index) {
-          refsToCompare.push(calcLastRef(video.index));
+        if (video && video.representations.length) {
+          const lastPosition = video.representations[0].index.getLastPosition();
+          if (lastPosition != null) {
+            refsToCompare.push(lastPosition);
+          }
         }
-        if (audio && audio.index) {
-          refsToCompare.push(calcLastRef(audio.index));
+        if (audio && audio.representations.length) {
+          const lastPosition = audio.representations[0].index.getLastPosition();
+          if (lastPosition != null) {
+            refsToCompare.push(lastPosition);
+          }
         }
         lastRef = Math.min(...refsToCompare);
       }

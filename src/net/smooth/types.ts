@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-import {
-  CustomSegmentLoader,
-} from "../types";
+import { IRepresentationIndex } from "../../manifest";
+import { CustomSegmentLoader } from "../types";
 
 interface IHSSKeySystem {
   systemId : string;
@@ -37,43 +36,43 @@ interface IHSSManifestSegment {
   r : number;
 }
 
-interface IInitialization {
-  range?: Array<number|null>|null;
-  media?: string|null;
-  indexRange?: Array<number|null>;
-}
+// interface IInitialization {
+//   range?: Array<number|null>|null;
+//   media?: string|null;
+//   indexRange?: Array<number|null>;
+// }
 
-interface IIndex {
-  timeline: IHSSManifestSegment[];
-  timescale: number;
-  initialization?: IInitialization;
-  indexType?: string;
-}
+// interface IIndex {
+//   timeline: IHSSManifestSegment[];
+//   timescale: number;
+//   initialization?: IInitialization;
+//   indexType?: string;
+// }
 
 interface IContentProtectionSmooth {
   keyId : string;
   keySystems: IHSSKeySystem[];
 }
 
-interface ISmoothRepresentationIndexIndex {
-  timeline : IHSSManifestSegment[];
-  indexType : "smooth";
-  timescale : number;
-  initialization : {};
-}
+// interface ISmoothRepresentationIndexIndex {
+//   timeline : IHSSManifestSegment[];
+//   indexType : "smooth";
+//   timescale : number;
+//   initialization : {};
+// }
 
 interface IRepresentationSmooth {
   // required
   baseURL : string;
   bitrate: number;
   codecPrivateData: string;
-  index: ISmoothRepresentationIndexIndex;
+  index: IRepresentationIndex;
   id: string;
 
   // optional
   audiotag?: number;
-  bitsPerSample?: number;
-  channels?: number;
+  bitsPerSample? : number;
+  channels? : number;
   codecs?: string;
   height?: number;
   mimeType?: string;
@@ -96,17 +95,14 @@ interface IAdaptationSmooth {
   representations: IRepresentationSmooth[];
 
   // -- optional --
-  smoothProtection?: IContentProtectionSmooth;
   closedCaption? : boolean;
   audioDescription? : boolean;
-  index: IIndex;
   name?: string;
   language?: string;
-  normalizedLanguage?: string|null;
+  normalizedLanguage?: string;
 }
 
 export {
-  IIndex,
   IHSSKeySystem,
   IPeriodSmooth,
   IHSSParserOptions,

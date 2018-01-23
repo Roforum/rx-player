@@ -15,8 +15,8 @@
  */
 
 import {
+  ISegment,
   Representation,
-  Segment,
 } from "../../manifest";
 import {
   INextSegmentsInfos,
@@ -37,12 +37,7 @@ function addNextSegments(
     dlSegment.duration != null &&
     dlSegment.timescale != null
   ) {
-    // TODO TypeScript bug?
-    representation.index._addSegments(nextSegments, dlSegment as {
-      time : number;
-      duration : number;
-      timescale : number;
-    });
+    representation.index._addSegments(nextSegments, dlSegment);
   }
 }
 
@@ -79,7 +74,7 @@ function processFormatedToken(
  * Replace "tokens" written in a given path (e.g. $Time$) by the corresponding
  * infos, taken from the given segment.
  * @param {string} path
- * @param {Segment} segment
+ * @param {Object} segment
  * @param {Representation} representation
  * @returns {string}
  *
@@ -87,7 +82,7 @@ function processFormatedToken(
  */
 function replaceTokens(
   path : string,
-  segment : Segment,
+  segment : ISegment,
   representation : Representation
 ) : string {
   if (path.indexOf("$") === -1) {
