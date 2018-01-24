@@ -249,6 +249,13 @@ export default function parseMPD(
     const nextPeriod = parsedPeriods[i + 1];
     if (period.duration == null && nextPeriod && nextPeriod.start != null) {
       period.duration = nextPeriod.start - period.start;
+    } else if (
+      i === 0 &&
+      period.duration == null &&
+      duration &&
+      !nextPeriod
+    ){
+      period.duration = duration;
     }
 
     periods.push(period);

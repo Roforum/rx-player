@@ -125,12 +125,11 @@ function getISOBMFFTimingInfos(
   if (duration == null) {
     if (_sidxSegments.length === 1) {
       const sidxDuration = _sidxSegments[0].duration;
-      if (
-        sidxDuration >= 0 &&
-        (
+      if(sidxDuration >= 0){
+        duration = sidxDuration;
+      } else if (
           segmentDuration == null ||
           Math.abs(segmentDuration - sidxDuration) <= maxDecodeTimeDelta
-        )
       ) {
         const sidxTimescale = _sidxSegments[0].timescale;
         duration = sidxTimescale != null && sidxTimescale !== timescale ?
