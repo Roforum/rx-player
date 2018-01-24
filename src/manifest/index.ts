@@ -15,6 +15,7 @@
  */
 
 import arrayFind = require("array-find");
+import arrayIncludes from "../utils/array-includes";
 import assert from "../utils/assert";
 import generateNewId from "../utils/id";
 import { normalize as normalizeLang } from "../utils/languages";
@@ -54,6 +55,7 @@ interface IManifestArguments {
   periods : IPeriodArguments[];
   presentationLiveGap? : number;
   suggestedPresentationDelay? : number;
+  minimumUpdatePeriod? : number;
   timeShiftBufferDepth? : number;
   transportType : string;
   type? : string;
@@ -75,6 +77,8 @@ export default class Manifest {
   public availabilityStartTime? : number;
   public presentationLiveGap? : number;
   public timeShiftBufferDepth? : number;
+  public minimumUpdatePeriod?: number;
+  public loadedAt: number;
 
   private _duration : number;
 
@@ -105,6 +109,7 @@ export default class Manifest {
     this.availabilityStartTime = args.availabilityStartTime;
     this.presentationLiveGap = args.presentationLiveGap;
     this.timeShiftBufferDepth = args.timeShiftBufferDepth;
+    this.minimumUpdatePeriod = args.minimumUpdatePeriod;
 
     // --------- private data
     this._duration = args.duration;
@@ -115,6 +120,8 @@ export default class Manifest {
       assert(this.presentationLiveGap != null);
       assert(this.timeShiftBufferDepth != null);
     }
+
+    this.loadedAt = Date.now() / 1000;
   }
 
   /**
@@ -311,45 +318,75 @@ export default class Manifest {
 
   /**
    * Update the current manifest properties
-   * XXX TODO Also update attributes?
    * @param {Object} Manifest
    */
   update(newManifest : Manifest) {
     const oldPeriods = this.periods;
     const newPeriods = newManifest.periods;
 
+    // update actual periods
     for (let periodIndex = 0; periodIndex < oldPeriods.length; periodIndex++) {
-      const oldAdaptations = oldPeriods[periodIndex].getAdaptations();
-      const newAdaptations = newPeriods[periodIndex].getAdaptations();
+      const newPeriod =
+        newPeriods.find(period => period.id === oldPeriods[periodIndex].id);
+      if(newPeriod != null) {
+        // update period informations
+        oldPeriods[periodIndex].duration = newPeriod.duration;
+        oldPeriods[periodIndex].end = newPeriod.end;
 
-      for (let i = 0; i < oldAdaptations.length; i++) {
-        const newAdaptation =
-          arrayFind(newAdaptations, a => a.id === oldAdaptations[i].id);
+        // update representations informations
+        const oldAdaptations = oldPeriods[periodIndex].getAdaptations();
+        const newAdaptations = newPeriod.getAdaptations();
 
-        if (!newAdaptation) {
-          log.warn(
-            `manifest: adaptation "${oldAdaptations[i].id}" not found when merging.`
-          );
-        } else {
-          const oldRepresentations = oldAdaptations[i].representations;
-          const newRepresentations = newAdaptation.representations;
-          for (let j = 0; j < oldRepresentations.length; j++) {
-            const newRepresentation =
-              arrayFind(newRepresentations, r => r.id === oldRepresentations[j].id);
+        for (let i = 0; i < oldAdaptations.length; i++) {
+          const newAdaptation =
+            arrayFind(newAdaptations, a => a.id === oldAdaptations[i].id);
 
-            if (!newRepresentation) {
-              /* tslint:disable:max-line-length */
-              log.warn(
-                `manifest: representation "${oldRepresentations[j].id}" not found when merging.`
-              );
-              /* tslint:enable:max-line-length */
-            } else {
-              oldRepresentations[j].index._update(newRepresentation.index);
+          if (!newAdaptation) {
+            log.warn(
+              `manifest: adaptation "${oldAdaptations[i].id}" not found when merging.`
+            );
+          } else {
+            const oldRepresentations = oldAdaptations[i].representations;
+            const newRepresentations = newAdaptation.representations;
+            for (let j = 0; j < oldRepresentations.length; j++) {
+              const newRepresentation =
+                arrayFind(newRepresentations, r => r.id === oldRepresentations[j].id);
+
+              if (!newRepresentation) {
+                /* tslint:disable:max-line-length */
+                log.warn(
+                  `manifest: representation "${oldRepresentations[j].id}" not found when merging.`
+                );
+                /* tslint:enable:max-line-length */
+              } else {
+                oldRepresentations[j].index._update(newRepresentation.index);
+              }
             }
           }
         }
+      } else { // splice expired period
+        oldPeriods.splice(periodIndex, 1);
       }
     }
+
+    // push new periods
+    newPeriods.forEach((newPeriod) => {
+      const sharedPeriod =
+        arrayIncludes(oldPeriods, newPeriod);
+      if(!sharedPeriod)  {
+        oldPeriods.push(newPeriod);
+      }
+    });
+
+    // update manifest attributes
+    this.loadedAt = Date.now() / 1000;
+    this.suggestedPresentationDelay = newManifest.suggestedPresentationDelay;
+    this.availabilityStartTime = newManifest.availabilityStartTime;
+    this.presentationLiveGap = newManifest.presentationLiveGap;
+    this.timeShiftBufferDepth = newManifest.timeShiftBufferDepth;
+    this.minimumUpdatePeriod = newManifest.minimumUpdatePeriod;
+    this._duration = newManifest._duration;
+
   }
 }
 
