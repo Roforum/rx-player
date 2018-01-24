@@ -35,6 +35,7 @@ export interface IBaseIndex {
   startNumber? : number;
   timeline : IIndexSegment[];
   timescale : number;
+  timeOffset? : number;
 }
 
 /**
@@ -166,6 +167,22 @@ export default class BaseRepresentationIndex implements IRepresentationIndex {
     for (let i = 0; i < nextSegments.length; i++) {
       _addSegmentInfos(this._index, nextSegments[i]);
     }
+  }
+
+  getTimeOffset() {
+    return this._index.timeOffset;
+  }
+
+  getTimescale() {
+    return this._index.timescale;
+  }
+
+  getTimeline() {
+    return this._index.timeline;
+  }
+
+  setTimeOffset(number? : number) {
+    this._index.timeOffset = number;
   }
 
   /**

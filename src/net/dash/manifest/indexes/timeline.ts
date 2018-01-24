@@ -35,6 +35,7 @@ export interface ITimelineIndex {
   startNumber? : number;
   timeline : IIndexSegment[];
   timescale : number;
+  timeOffset? : number;
 }
 
 /**
@@ -290,6 +291,22 @@ export default class TimelineRepresentationIndex implements IRepresentationIndex
     newIndex : TimelineRepresentationIndex /* TODO @ index refacto */
   ) : void {
     this._index = newIndex._index;
+  }
+
+  getTimeOffset() {
+    return this._index.timeOffset;
+  }
+
+  setTimeOffset(number: number): void {
+    this._index.timeOffset = number;
+  }
+
+  getTimescale(): number|undefined {
+    return this._index.timescale;
+  }
+
+  getTimeline(): any {
+    return this._index.timeline;
   }
 
   /**

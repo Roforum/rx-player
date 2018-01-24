@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+ import { IIndexSegment } from "../../net/dash/manifest/indexes/helpers";
+
 // privateInfos specific to Smooth Initialization Segments
 export interface ISmoothInitSegmentPrivateInfos {
   type : "smooth-init";
@@ -116,6 +118,26 @@ export default interface IRepresentationIndex {
    * for the next (discontinuited) range. If not this is equal to -1.
    */
   checkDiscontinuity(time : number) : number;
+
+  /**
+   * Get current timeOffset from index
+   */
+  getTimeOffset(): number|undefined;
+
+  /**
+   * Get current timescale from index
+   */
+  getTimescale(): number|undefined;
+
+  /**
+   * Get current timeline from index
+   */
+  getTimeline(): IIndexSegment[]|undefined;
+
+  /**
+   * Set timeOffset in index
+   */
+  setTimeOffset(timeOffset? : number): void;
 
   /**
    * Update the index with another one, such as after a Manifest update.

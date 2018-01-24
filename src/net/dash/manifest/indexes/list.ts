@@ -35,6 +35,7 @@ export interface IListIndex {
   }>;
   duration : number;
   presentationTimeOffset? : number;
+  timeOffset? : number;
 }
 
 /**
@@ -142,6 +143,22 @@ export default class ListRepresentationIndex implements IRepresentationIndex {
    */
   _update(newIndex : ListRepresentationIndex) : void {
     this._index = newIndex._index;
+  }
+
+  getTimeOffset() {
+    return this._index.timeOffset;
+  }
+
+  getTimescale() {
+    return this._index.timescale;
+  }
+
+  getTimeline() {
+    return undefined;
+  }
+
+  setTimeOffset(number? : number) {
+    this._index.timeOffset = number;
   }
 
   /**

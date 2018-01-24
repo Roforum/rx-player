@@ -114,6 +114,22 @@ export default class StaticRepresentationIndex<
     }
   }
 
+  getTimeOffset(): number|undefined {
+    return undefined;
+  }
+
+  setTimeOffset(): void {
+    return;
+  }
+
+  getTimescale(): number|undefined {
+    return undefined;
+  }
+
+  getTimeline(): any {
+    return undefined;
+  }
+
   _update() : void {
     log.warn("Tried to update a static RepresentationIndex");
   }

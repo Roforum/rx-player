@@ -540,6 +540,22 @@ export default class SmoothRepresentationIndex
       this._index = newIndex._index;
     }
 
+    getTimeOffset(): number|undefined {
+      return this._index.timeOffset;
+    }
+
+    setTimeOffset(number: number): void {
+      this._index.timeOffset = number;
+    }
+
+    getTimescale(): number|undefined {
+      return this._index.timescale;
+    }
+
+    getTimeline(): any {
+      return this._index.timeline;
+    }
+
     _addSegments(
       nextSegments : Array<{
         duration : number;

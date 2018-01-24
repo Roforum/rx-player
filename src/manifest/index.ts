@@ -30,7 +30,7 @@ import Representation from "./representation";
 import IRepresentationIndex, {
   ISegment,
   StaticRepresentationIndex,
-} from "./representation_index";
+} from "./representation_index/index";
 
 type ManifestAdaptations = Partial<Record<AdaptationType, Adaptation[]>>;
 
