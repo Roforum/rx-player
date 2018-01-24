@@ -206,6 +206,8 @@ export default class LanguageManager {
 
       this._audioChoiceMemory.set(period, optimalAdaptation);
       audioInfos.adaptation$.next(optimalAdaptation);
+    } else {
+      audioInfos.adaptation$.next(chosenAudioAdaptation);
     }
   }
 

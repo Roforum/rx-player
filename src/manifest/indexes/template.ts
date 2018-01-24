@@ -57,13 +57,21 @@ const SegmentTemplateHelpers: ISegmentHelpers<ITemplateIndex> = {
       timescale,
       media,
       presentationTimeOffset,
+      timeOffset,
     } = index;
 
     const segments : Segment[] = [];
-    for (let baseTime = up; baseTime <= to; baseTime += duration) {
-      const number = Math.floor(baseTime / duration) +
-        (startNumber == null ? 1 : startNumber);
-
+    for (let baseTime = up; baseTime < to; baseTime += duration) {
+      let number;
+      if(timeOffset){
+        const baseNumber = Math.floor((baseTime - (timeOffset * timescale)) / duration);
+        const offsetNumber = Math.floor((timeOffset * timescale) / duration);
+        number = baseNumber + offsetNumber +
+          (startNumber == null ? 1 : startNumber);
+      } else {
+        number = Math.floor(baseTime / duration) +
+          (startNumber == null ? 1 : startNumber);
+      }
       const time = (number -
         (startNumber == null ? 1 : startNumber)
       ) * duration + (presentationTimeOffset || 0);
